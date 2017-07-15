@@ -1,1 +1,12 @@
 server.port: 8080
+
+settings:
+  cp: oanda
+  symbol: USD/JPY
+  sendInterval: 5000
+  indicativeText: Indicative
+  upperLimit: 125
+  lowerLimit: 70
+  spread: 0.004
+  move: 0.01
+  rateGenerateInterval: 100

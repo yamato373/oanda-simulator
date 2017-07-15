@@ -7,18 +7,14 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PostConstruct;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import jp.yamato373.fix.util.Settings;
 import lombok.Data;
 
 @Service
 public class RateGeneratWorker {
-
-	private static final BigDecimal UPPER_LIMIT = new BigDecimal("110");
-	private static final BigDecimal LOWER_LIMIT = new BigDecimal("90");
-	private static final BigDecimal SPREAD = new BigDecimal("0.004");
-	private static final BigDecimal MOVE = new BigDecimal("0.001");
-	private static final int INTERVAL = 100;
 
 	private Rate rate;
 
@@ -26,13 +22,15 @@ public class RateGeneratWorker {
 
 	ExecutorService exec = Executors.newSingleThreadExecutor();
 
+	@Autowired
+	Settings settings;
 
 	@PostConstruct
 	public void init() {
 		downFlg = true;
 		rate = new Rate();
-		rate.setAskPx(UPPER_LIMIT);
-		rate.setBidPx(rate.getAskPx().subtract(SPREAD));
+		rate.setAskPx(settings.getUpperLimit());
+		rate.setBidPx(rate.getAskPx().subtract(settings.getSpread()));
 		startGenerate();
 	}
 
@@ -41,21 +39,21 @@ public class RateGeneratWorker {
 			while (true) {
 
 				if (downFlg) {
-					rate.setAskPx(rate.getAskPx().subtract(MOVE));
-					rate.setBidPx(rate.getBidPx().subtract(MOVE));
+					rate.setAskPx(rate.getAskPx().subtract(settings.getMove()));
+					rate.setBidPx(rate.getBidPx().subtract(settings.getMove()));
 				} else {
-					rate.setAskPx(rate.getAskPx().add(MOVE));
-					rate.setBidPx(rate.getBidPx().add(MOVE));
+					rate.setAskPx(rate.getAskPx().add(settings.getMove()));
+					rate.setBidPx(rate.getBidPx().add(settings.getMove()));
 				}
 
-				if (UPPER_LIMIT.compareTo(rate.getAskPx()) <= 0) {
+				if (settings.getUpperLimit().compareTo(rate.getAskPx()) <= 0) {
 					downFlg = true;
-				} else if (LOWER_LIMIT.compareTo(rate.getBidPx()) >= 0) {
+				} else if (settings.getLowerLimit().compareTo(rate.getBidPx()) >= 0) {
 					downFlg = false;
 				}
 
 				try {
-					TimeUnit.MILLISECONDS.sleep(INTERVAL);
+					TimeUnit.MILLISECONDS.sleep(settings.getRateGenerateInterval());
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}

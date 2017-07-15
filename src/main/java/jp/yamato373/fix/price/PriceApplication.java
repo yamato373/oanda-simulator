@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import jp.yamato373.fix.MarketDataProvider;
+import jp.yamato373.fix.util.Settings;
 import lombok.extern.slf4j.Slf4j;
 import quickfix.Application;
 import quickfix.ConfigError;
@@ -60,12 +61,11 @@ public class PriceApplication extends MessageCracker implements Application {
 	private final HashSet<String> validOrderTypes = new HashSet<>();
 	private MarketDataProvider marketDataProvider;
 
-	private static final int INTERVAL = 5000;
-	private static final String SYMBOL = "USD/JPY";
-	private final String INDICATIVE_TEXT = "Indicative";
-
 	@Autowired
 	RateGeneratWorker rateGeneratWorker;
+
+	@Autowired
+	Settings settings;
 
 	private String mDReqID;
 
@@ -161,7 +161,7 @@ public class PriceApplication extends MessageCracker implements Application {
 			MarketDataSnapshotFullRefresh marketDataSnapshotFullRefresh = new MarketDataSnapshotFullRefresh();
 
 			marketDataSnapshotFullRefresh.set(request.getMDReqID());
-			marketDataSnapshotFullRefresh.set(new Symbol(SYMBOL));
+			marketDataSnapshotFullRefresh.set(new Symbol(settings.getSymbol()));
 
 			MarketDataSnapshotFullRefresh.NoMDEntries noMDEntries = new MarketDataSnapshotFullRefresh.NoMDEntries();
 
@@ -175,7 +175,7 @@ public class PriceApplication extends MessageCracker implements Application {
 			noMDEntries.set(new MDEntryTime(new Date()));
 			if (indicativeChangeFlg){
 				noMDEntries.set(new MDEntrySize(0));
-				noMDEntries.set(new Text(INDICATIVE_TEXT));
+				noMDEntries.set(new Text(settings.getIndicativeText()));
 			}
 			marketDataSnapshotFullRefresh.addGroup(noMDEntries);
 
@@ -186,7 +186,7 @@ public class PriceApplication extends MessageCracker implements Application {
 			noMDEntries.set(new MDEntryTime(new Date()));
 			if (indicativeChangeFlg){
 				noMDEntries.set(new MDEntrySize(0));
-				noMDEntries.set(new Text(INDICATIVE_TEXT));
+				noMDEntries.set(new Text(settings.getIndicativeText()));
 			}
 			marketDataSnapshotFullRefresh.addGroup(noMDEntries);
 
@@ -205,7 +205,7 @@ public class PriceApplication extends MessageCracker implements Application {
 			while (true) {
 
 				try {
-					TimeUnit.MILLISECONDS.sleep(INTERVAL);
+					TimeUnit.MILLISECONDS.sleep(settings.getSendInterval());
 				} catch (InterruptedException e) {
 					// タスクのクリア時に割込みされるが問題なし
 				}
@@ -226,7 +226,7 @@ public class PriceApplication extends MessageCracker implements Application {
 
 				noMDEntries.set(new MDUpdateAction(MDUpdateAction.CHANGE));
 				noMDEntries.set(new MDEntryType(MDEntryType.BID));
-				noMDEntries.set(new Symbol(SYMBOL));
+				noMDEntries.set(new Symbol(settings.getSymbol()));
 				if (pxChangeFlg){
 					noMDEntries.set(new MDEntryPx(rateGeneratWorker.getRate().getBidPx().doubleValue()));
 				}
@@ -237,13 +237,13 @@ public class PriceApplication extends MessageCracker implements Application {
 				noMDEntries.set(new MDEntryTime(new Date()));
 				if (indicativeChangeFlg){
 					noMDEntries.set(new MDEntrySize(0));
-					noMDEntries.set(new Text(INDICATIVE_TEXT));
+					noMDEntries.set(new Text(settings.getIndicativeText()));
 				}
 				marketDataIncrementalRefresh.addGroup(noMDEntries);
 
 				noMDEntries.set(new MDUpdateAction(MDUpdateAction.CHANGE));
 				noMDEntries.set(new MDEntryType(MDEntryType.OFFER));
-				noMDEntries.set(new Symbol(SYMBOL));
+				noMDEntries.set(new Symbol(settings.getSymbol()));
 				if (pxChangeFlg){
 					noMDEntries.set(new MDEntryPx(rateGeneratWorker.getRate().getAskPx().doubleValue()));
 				}
@@ -254,7 +254,7 @@ public class PriceApplication extends MessageCracker implements Application {
 				noMDEntries.set(new MDEntryTime(new Date()));
 				if (indicativeChangeFlg){
 					noMDEntries.set(new MDEntrySize(0));
-					noMDEntries.set(new Text(INDICATIVE_TEXT));
+					noMDEntries.set(new Text(settings.getIndicativeText()));
 				}
 				marketDataIncrementalRefresh.addGroup(noMDEntries);
 
